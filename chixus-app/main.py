@@ -389,7 +389,7 @@ async def login_operator(payload: LoginRequest):
     conn.close()
 
     if not row:
-        logger.warning(f"Unauthorized authentication attempt for operator_id: '{clean_id}'")
+        logger.warning("Unauthorized operator authentication attempt.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Access Denied: Invalid CHIXUS Operator ID '{clean_id}'. Token key not found in operator registry."
@@ -407,7 +407,7 @@ async def login_operator(payload: LoginRequest):
         accuracy=row["accuracy"]
     )
 
-    logger.info(f"Operator '{clean_id}' successfully authenticated via passwordless token.")
+    logger.info("Operator authenticated successfully.")
 
     return LoginResponse(
         status="success",
