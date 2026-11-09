@@ -1,0 +1,30 @@
+# Node / frontend
+node_modules/
+dist/
+dist-ssr/
+*.local
+.netlify/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.keystore
+
+# Runtime data
+*.db
+*.sqlite
+*.sqlite3
+*.log
+chixus_users.json
+chixus_app_data.json
+chixus_audit_logs.json
