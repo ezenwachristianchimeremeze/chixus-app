@@ -86,35 +86,44 @@ console.log(`[CHIXUS CORE] Loaded ${usersDatabase.length} operators, ${appData.i
 // ==========================================
 // FEATURE 8: MULTI-CHANNEL SMTP FAILOVER (Domain 2)
 // ==========================================
+const smtpUser = process.env.SMTP_USER || '';
+const smtpPass = process.env.SMTP_PASS || '';
+const smtpFrom = process.env.SMTP_FROM || smtpUser;
+const backupSmtpUser = process.env.SMTP_BACKUP_USER || '';
+const backupSmtpPass = process.env.SMTP_BACKUP_PASS || '';
+const backupSmtpFrom = process.env.SMTP_BACKUP_FROM || backupSmtpUser;
+
 const primaryTransporter = nodemailer.createTransport({
   service: 'gmail',
-  auth: { user: 'chixus.system@gmail.com', pass: process.env.GMAIL_PASS || 'binsnyyfbesijmbp' }
+  auth: { user: smtpUser, pass: smtpPass }
 });
 
-const backupTransporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: { user: 'chixus.support@gmail.com', pass: process.env.GMAIL_PASS || 'binsnyyfbesijmbp' }
-});
+const backupTransporter = backupSmtpUser && backupSmtpPass
+  ? nodemailer.createTransport({
+      service: 'gmail',
+      auth: { user: backupSmtpUser, pass: backupSmtpPass }
+    })
+  : null;
 
 const sendMailWithFailover = async (to: string, subject: string, text: string) => {
-  const mailOptions = { from: 'chixus.system@gmail.com', to, subject, text };
+  if (!smtpUser || !smtpPass || !smtpFrom) {
+    throw new Error('SMTP is not configured. Set SMTP_USER, SMTP_PASS, and SMTP_FROM.');
+  }
+
+  const mailOptions = { from: smtpFrom, to, subject, text };
   try {
     await primaryTransporter.sendMail(mailOptions);
-    console.log(`[SMTP PRIMARY] Email dispatched successfully to ${to}`);
+    console.log('[SMTP PRIMARY] Email dispatched successfully.');
   } catch (err) {
-    console.warn(`[SMTP FAILOVER] Primary failed, switching to backup transporter for ${to}...`);
-    try {
-      mailOptions.from = 'chixus.support@gmail.com';
-      await backupTransporter.sendMail(mailOptions);
-      console.log(`[SMTP BACKUP] Email dispatched successfully via backup to ${to}`);
-    } catch (backupErr) {
-      console.error(`[SMTP ERROR] Both primary and backup SMTP failed for ${to}:`, backupErr);
-      throw backupErr;
+    if (!backupTransporter || !backupSmtpFrom) {
+      throw err;
     }
+    console.warn('[SMTP FAILOVER] Primary delivery failed; attempting configured backup.');
+    await backupTransporter.sendMail({ ...mailOptions, from: backupSmtpFrom });
+    console.log('[SMTP BACKUP] Email dispatched successfully.');
   }
 };
 
-// ==========================================
 // FEATURE 4: RATE LIMITER & DDoS DEFENSE (Domain 1)
 // ==========================================
 const requestIpCounts = new Map<string, { count: number; resetTime: number }>();
@@ -352,11 +361,13 @@ app.put('/api/profile/:id', (req, res) => {
   return res.json({ success: true, profile: usersDatabase[index] });
 });
 
-// Admin SQL compatibility wrapper
-app.get('/api/admin/sql', (req: any, res: any) => {
-  const { key, query } = req.query;
-  if (key !== 'chixus_admin_2026') return res.status(403).json({ success: false, error: 'Unauthorized admin key' });
-  return res.json({ status: 'success', data: usersDatabase });
+// Disabled legacy data-export endpoint.
+// Do not expose the operator database through a query-string key.
+app.get('/api/admin/sql', (_req: any, res: any) => {
+  return res.status(410).json({
+    success: false,
+    error: 'This legacy endpoint is disabled. Use a properly authenticated admin interface.'
+  });
 });
 
 const PORT = 3000;
