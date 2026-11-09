@@ -271,10 +271,7 @@ def dispatch_operator_token_email(to_email: str, operator_id: str, fullname: str
 
     # Mock SMTP node simulation (production-grade fallback & logging)
     logger.info("=" * 70)
-    logger.info(f"[SMTP DISPATCH MOCK NODE] Routed email to: {to_email}")
-    logger.info(f"Subject: {subject}")
-    logger.info(f"Token Payload: {operator_id}")
-    logger.info("Body: Your unique CHIXUS Operational Access Token has been generated. Use this string key to authenticate your terminal node.")
+    logger.info("[SMTP DISPATCH MOCK NODE] SMTP is not configured; no email was sent.")
     logger.info("=" * 70)
     return True
 
